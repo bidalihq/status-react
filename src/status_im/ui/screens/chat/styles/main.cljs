@@ -221,6 +221,14 @@
    :line-height 22
    :text-align  :center})
 
+(def loading-text
+  {:color          colors/gray
+   :font-size      15
+   :line-height    22
+   :letter-spacing -0.2
+   :margin-right   4
+   :text-align     :center})
+
 (def empty-chat-text-name
   {:margin-bottom 5
    :color         colors/black})
