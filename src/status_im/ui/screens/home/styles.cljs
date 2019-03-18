@@ -13,7 +13,6 @@
 
 (defstyle chat-container
   {:flex-direction   :row
-   :background-color colors/white
    :android          {:height 76}
    :ios              {:height 74}
    :overflow         :hidden})

@@ -86,7 +86,8 @@
 (defview toolbar-view []
   (letsubs [settings           [:wallet/settings]
             {address :address} [:account/account]]
-    [toolbar/toolbar {:transparent? true}
+    [toolbar/toolbar {:style {:background-color    colors/blue
+                              :border-bottom-width 0}}
      nil
      [toolbar/content-wrapper]
      [toolbar/actions

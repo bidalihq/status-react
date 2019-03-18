@@ -254,7 +254,6 @@
                      false)}))
          [list/flat-list {:data           all-home-items
                           :key-fn         first
-                          :end-fill-color colors/white
                           :footer         [react/view
                                            {:style {:height     tabs.styles/tabs-diff
                                                     :align-self :stretch}}]
@@ -285,8 +284,7 @@
             100))))}
     [react/view {:flex 1}
      [status-bar/status-bar {:type :main}]
-     [react/keyboard-avoiding-view {:style {:flex             1
-                                            :background-color :white}}
+     [react/keyboard-avoiding-view {:style {:flex 1}}
       [toolbar show-welcome? (and network-initialized? (not rpc-network?))
        sync-state latest-block-number (not logging-in?)]
       (cond show-welcome?
