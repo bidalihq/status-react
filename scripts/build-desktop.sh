@@ -385,7 +385,7 @@ if is_macos; then
   
     # Walk through the dependencies of $dylib
     local dependencies=$(otool -L "$dylib" | grep -E "\s+/nix/" | sed "s|@executable_path|$exeDir|" | awk -F "(" '{print $1}' | xargs)
-    local moduleDirPath=$(basename $dylib)
+    local moduleDirPath=$(dirname $dylib)
     for depDylib in $dependencies; do
       # Fix rpath and copy library to target
       local replacementTargetPath=""
@@ -411,8 +411,15 @@ if is_macos; then
         fi
 
         # Change dependency rpath in $dylib to point to $replacementTargetPath
-        local replacementPath="@executable_path/$(realpath --relative-to="$exeDir" "$frameworksDir")"
-        replacementTargetPath=$(echo $targetDepDylib | sed -e "s|$moduleDirPath|$replacementPath|")
+        local replacementPath=""
+        local targetDepModuleDirPath=$(dirname $targetDepDylib)
+        if [[ $targetDepModuleDirPath -ef $moduleDirPath ]]; then
+          replacementPath="@loader_path"
+        else
+          replacementPath="@executable_path/$(realpath --relative-to="$exeDir" "$targetDepModuleDirPath")"
+        fi
+        local modulePathRegExp="($(pwd)/)?$moduleDirPath"
+        replacementTargetPath=$(echo $targetDepDylib | sed -E "s|$modulePathRegExp|$replacementPath|")
       fi
 
       if [ -n "$replacementTargetPath" ]; then
@@ -428,6 +435,14 @@ if is_macos; then
 
     for dylib in `find $searchRootPath -name *.dylib`; do
       fixupRPathsInDylib "$dylib" "$contentsDir"
+
+      # Sanity check for absolute paths
+      local dependencies=$(otool -L "$dylib" | grep -E "\s+${STATUSREACTPATH}")
+      if [ -n "$dependencies" ]; then
+        echo "Absolute path detected in dependencies of $dylib. Aborting..."
+        echo "${dependencies[@]}"
+        exit 1
+      fi
     done
   }
 fi
@@ -459,7 +474,7 @@ function bundleMacOS() {
     cp -f ../deployment/macos/Info.plist $contentsPath
     cp -f ../deployment/macos/status-icon.icns $contentsPath/Resources
 
-    local qtbaseplugins=(bearer platforms styles)
+    local qtbaseplugins=(bearer platforms printsupport styles)
     local qtfullplugins=(iconengines imageformats webview)
     if program_exists nix && [ -n "$IN_NIX_SHELL" ]; then
       # Since in the Nix qt.full package the different Qt modules are spread across several directories,
