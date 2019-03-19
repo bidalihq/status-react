@@ -313,6 +313,12 @@ function bundleLinux() {
 }
 
 if is_macos; then
+  function getQtFullOutPathFromNixStore() {
+    local qtFullDerivationPath=$(nix show-derivation -f $STATUSREACTPATH/default.nix | jq -r '.[] | .inputDrvs | 'keys' | .[]' | grep qt-full)
+
+    echo $(nix show-derivation $qtFullDerivationPath | jq -r '.[] | .outputs.out.path')
+  }
+
   function getQtBaseBinPathFromNixStore() {
     local qtFullDerivationPath=$(nix show-derivation -f $STATUSREACTPATH/default.nix | jq -r '.[] | .inputDrvs | 'keys' | .[]' | grep qt-full)
     local qtBaseDerivationPath=$(nix show-derivation $qtFullDerivationPath | jq -r '.[] | .inputDrvs | 'keys' | .[]' | grep qtbase)
@@ -320,51 +326,108 @@ if is_macos; then
     echo $(nix show-derivation $qtBaseDerivationPath | jq -r '.[] | .outputs.bin.path')
   }
 
-  function copyVersionedQtLibToPackage() {
-    local qtbaseBinPath="$1"
-    local fileName="$2"
-    local targetPath="$3"
+  function copyDylibNixDependenciesToPackage() {
+    local dylib="$1"
+    local contentsDir="$2"
+    local frameworksDir="$contentsDir/Frameworks"
+    local exeDir="$contentsDir/MacOS"
 
-    mkdir -p $targetPath
-    local srcPath=$(find $qtbaseBinPath/lib -name $fileName)
+    # Walk through the dependencies of $dylib
+    local dependencies=$(otool -L "$dylib" | grep -E "\s+/nix/" | awk -F "(" '{print $1}' | xargs)
+    local moduleDirPath=$(basename $dylib)
+    for depDylib in $dependencies; do
+      local targetDepDylib=$(joinPath "$frameworksDir" "$(basename $depDylib)")
+      # Copy any dependencies that: are not in the Frameworks directory, do not already exist in /usr/lib and are not a Qt5 module (will be handled by macdeployqt anyway)
+      if [ ! -f "$targetDepDylib" ] && [[ "$(basename $targetDepDylib)" != "libQt5"* ]] && [ ! -f "/usr/lib/$(basename $depDylib)" ]; then
+        [ $VERBOSE_LEVEL -ge 1 ] && echo "  Copying $depDylib to $frameworksDir..."
+        cp -a -L "$depDylib" "$frameworksDir"
+        chmod 0755 "$targetDepDylib"
+
+        copyDylibNixDependenciesToPackage "$depDylib" "$contentsDir"
+      fi
+    done
+  }
+
+  function copyQtPlugInToPackage() {
+    local qtPath="$1"
+    local pluginName="$2"
+    local contentsPath="$3"
+    local filter=""
+    local targetPath="$contentsPath/PlugIns"
+    local pluginTargetPath="$targetPath/$pluginName"
+
+    [ "$pluginName" == 'platforms' ] && filter='libqcocoa.dylib'
+
+    mkdir -p $pluginTargetPath
+    local qtLibPath=$(find $qtPath/lib -maxdepth 1 -name qt-*)
+    local srcPath=$(readlink -f "$qtLibPath/plugins/$pluginName")
     echo "Copying $srcPath to $targetPath"
-    cp -a -f "$srcPath" "$targetPath/$fileName"
-    chmod +w "$targetPath/$fileName"
+    if [ -z "$filter" ]; then
+      cp -a -f -L "$srcPath" "$targetPath"
+    else
+      cp -f $(readlink -f "$srcPath/$filter") "$pluginTargetPath"
+    fi
+    chmod 755 $pluginTargetPath
+    chmod 755 $pluginTargetPath/*
+
+    for dylib in `find $pluginTargetPath -name *.dylib`; do
+      copyDylibNixDependenciesToPackage "$dylib" "$contentsPath"
+    done
   }
 
   function fixupRPathsInDylib() {
     local dylib="$1"
-    local targetPath="$2"
-    local replacementPath="$3"
+    local contentsDir="$2"
+    local frameworksDir="$contentsDir/Frameworks"
+    local exeDir="$contentsDir/MacOS"
 
-    [ $VERBOSE_LEVEL -ge 2 ] && echo "${dylib}"
+    [ $VERBOSE_LEVEL -ge 1 ] && echo "Checking rpaths in ${dylib}"
   
     # Walk through the dependencies of $dylib
-    local dependencies=$(otool -L "$dylib" | grep ".dylib (" | sed "s|@executable_path|$targetPath|" | awk -F "(" '{print $1}' | xargs)
+    local dependencies=$(otool -L "$dylib" | grep -E "\s+/nix/" | sed "s|@executable_path|$exeDir|" | awk -F "(" '{print $1}' | xargs)
+    local moduleDirPath=$(basename $dylib)
     for depDylib in $dependencies; do
-      local targetDepDylib=$(joinPath "$targetPath" "$(basename $depDylib)")
-
       # Fix rpath and copy library to target
-      if [[ $depDylib == /nix/* ]]; then
+      local replacementTargetPath=""
+      local framework=$(echo $depDylib | sed -E "s|^\/nix\/.+\/Library\/Frameworks\/(.+)\.framework\/\1$|\1|" 2> /dev/null)
+      if [ -n "$framework" ] && [ "$framework" != "$depDylib" ]; then
+        # Handle macOS framework
+        local targetDepDylib=$(joinExistingPath "/System/Library/Frameworks" "${framework}.framework/${framework}")
+
         if [ ! -f "$targetDepDylib" ]; then
-          echo -e "${RED}FATAL: $DEPLOYQT should have copied the dependency to ${targetPath}${NC}"
+          echo -e "${RED}FATAL: system framework not found: ${targetDepDylib}${NC}"
           exit 1
         fi
 
-        # Change dependency rpath in $dylib to point to $targetReplacementPath
-        local targetReplacementPath=$(echo $targetDepDylib | sed -e "s|$targetPath|$replacementPath|")
-        echo "Updating $dylib to point to $targetReplacementPath"
-        install_name_tool -change "$depDylib" "$targetReplacementPath" "$dylib"
+        # Change dependency rpath in $dylib to point to $targetDepDylib
+        replacementTargetPath=$targetDepDylib
+      else
+        # Handle other libraries
+        local targetDepDylib=$(joinPath "$frameworksDir" "$(basename $depDylib)")
+
+        if [ ! -f "$targetDepDylib" ]; then
+          echo -e "${RED}FATAL: macdeployqt should have copied the dependency to ${targetDepDylib}${NC}"
+          exit 1
+        fi
+
+        # Change dependency rpath in $dylib to point to $replacementTargetPath
+        local replacementPath="@executable_path/$(realpath --relative-to="$exeDir" "$frameworksDir")"
+        replacementTargetPath=$(echo $targetDepDylib | sed -e "s|$moduleDirPath|$replacementPath|")
+      fi
+
+      if [ -n "$replacementTargetPath" ]; then
+        [ $VERBOSE_LEVEL -ge 1 ] && echo "Updating $dylib to point to $replacementTargetPath"
+        install_name_tool -change "$depDylib" "$replacementTargetPath" "$dylib"
       fi
     done
   }
 
   function fixupRemainingRPaths() {
-    local binPath="$1"
-    local replacementPath="$2"
+    local searchRootPath="$1"
+    local contentsDir="$2"
 
-    for dylib in $binPath/*.dylib; do
-      fixupRPathsInDylib "$dylib" "$binPath" "$replacementPath"
+    for dylib in `find $searchRootPath -name *.dylib`; do
+      fixupRPathsInDylib "$dylib" "$contentsDir"
     done
   }
 fi
@@ -396,12 +459,16 @@ function bundleMacOS() {
     cp -f ../deployment/macos/Info.plist $contentsPath
     cp -f ../deployment/macos/status-icon.icns $contentsPath/Resources
 
+    local qtbaseplugins=(bearer platforms styles)
+    local qtfullplugins=(iconengines imageformats webview)
     if program_exists nix && [ -n "$IN_NIX_SHELL" ]; then
       # Since in the Nix qt.full package the different Qt modules are spread across several directories,
       # macdeployqt cannot find some qtbase plugins, so we copy them in its place
       local qtbaseBinPath=$(getQtBaseBinPathFromNixStore)
-      copyVersionedQtLibToPackage $qtbaseBinPath libqcocoa.dylib "$contentsPath/PlugIns/platforms/"
-      copyVersionedQtLibToPackage $qtbaseBinPath libcocoaprintersupport.dylib "$contentsPath/PlugIns/printsupport/"
+      local qtfullOutPath=$(getQtFullOutPathFromNixStore)
+      mkdir -p "$contentsPath/PlugIns"
+      for plugin in ${qtbaseplugins[@]}; do copyQtPlugInToPackage "$qtbaseBinPath" "$plugin" "$contentsPath"; done
+      for plugin in ${qtfullplugins[@]}; do copyQtPlugInToPackage "$qtfullOutPath" "$plugin" "$contentsPath"; done
     fi
 
     macdeployqt Status.app \
@@ -412,8 +479,8 @@ function bundleMacOS() {
 
     # macdeployqt doesn't fix rpaths for all the libraries (although it copies them all), so we'll just walk through them and update rpaths to not point to /nix
     echo "Fixing remaining rpaths in modules..."
-    local frameworksPath=$(joinExistingPath "$WORKFOLDER" "$contentsPath/Frameworks")
-    fixupRemainingRPaths "$frameworksPath" "@executable_path/../Frameworks"
+    fixupRemainingRPaths "$contentsPath/Frameworks" "$contentsPath"
+    fixupRemainingRPaths "$contentsPath/PlugIns" "$contentsPath"
     echo "Done fixing rpaths in modules"
     rm -f Status.app.zip
   popd
