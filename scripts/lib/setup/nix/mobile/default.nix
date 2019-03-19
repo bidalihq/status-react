@@ -12,8 +12,7 @@ let
 
 in
   {
-    buildInputs = [ bundler ] ++
-      lib.optional targetAndroid [
+    buildInputs = lib.optional targetAndroid [
         android-ndk
         openjdk
       ];

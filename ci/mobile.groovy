@@ -22,7 +22,7 @@ def prep(type = 'nightly') {
       sh 'cp .env.jenkins .env'; break
   }
   /* install ruby dependencies */
-  utils.nix_sh 'bundle install --quiet'
+  utils.nix_bundler_sh 'bundle install --quiet'
   /* node deps, pods, and status-go download */
   utils.nix_sh "make prepare-${env.TARGET_PLATFORM}"
 }
