@@ -405,11 +405,11 @@
                               [react/text {:style (transactions-styles/command-request-header-text outgoing)}
                                (i18n/label :transaction-request)]]
                              [react/view transactions-styles/command-request-row
-                              [react/text {:style (transactions-styles/command-request-amount-text outgoing)}
+                              [react/nested-text {:style (transactions-styles/command-request-amount-text outgoing)}
                                amount
-                               [react/text {:style (transactions-styles/command-amount-currency-separator outgoing)}
+                               [{:style (transactions-styles/command-amount-currency-separator outgoing)}
                                 "."]
-                               [react/text {:style (transactions-styles/command-request-currency-text outgoing)}
+                               [{:style (transactions-styles/command-request-currency-text outgoing)}
                                 asset]]]
                              (when (and platform/mobile?
                                         ;;NOTE(goranjovic) - have to hide cross network asset fiat value until we can support
