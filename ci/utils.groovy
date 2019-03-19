@@ -23,15 +23,6 @@ def nix_sh(cmd) {
   """
 }
 
-def nix_bundler_sh(cmd) {
-  sh """
-    . ~/.nix-profile/etc/profile.d/nix.sh && \\
-      nix-shell --pure -I https://github.com/status-im/nixpkgs/archive/15623aac6e8cbfa24d4268195bc8eda7303ea2ff.tar.gz \\
-        -p bundler ruby \\
-        --run \'${cmd}\'
-  """
-}
-
 def branchName() {
   return env.GIT_BRANCH.replaceAll(/.*origin\//, '')
 }
