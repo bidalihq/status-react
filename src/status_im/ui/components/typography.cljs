@@ -67,13 +67,14 @@
                (get typography-styles
                     typography)
                (dissoc style :typography))]
-    (-> style
-        (assoc :font-family (str default-font-family "-"
-                                 (case font-weight
-                                   "400"   "Regular"
-                                   "500"   "Medium"
-                                   "600"   "SemiBold"
-                                   "700"   "Bold")
-                                 (when (= font-style :italic)
-                                   "Italic"))
-               :line-height line-height))))
+    (assoc style
+           :font-family (str default-font-family "-"
+                             (case font-weight
+                               "400"   (when-not (= font-style :italic)
+                                         "Regular")
+                               "500"   "Medium"
+                               "600"   "SemiBold"
+                               "700"   "Bold")
+                             (when (= font-style :italic)
+                               "Italic"))
+           :line-height line-height)))
