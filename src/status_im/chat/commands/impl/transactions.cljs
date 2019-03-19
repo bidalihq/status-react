@@ -207,12 +207,11 @@
        [react/view
         [react/view transactions-styles/command-send-amount-row
          [react/view transactions-styles/command-send-amount
-          [react/text {:style (transactions-styles/command-send-amount-text outgoing)}
+          [react/nested-text {:style (transactions-styles/command-send-amount-text outgoing)}
            amount
-           [react/text {:style (transactions-styles/command-amount-currency-separator outgoing)}
+           [{:style (transactions-styles/command-amount-currency-separator outgoing)}
             "."]
-           [react/text {:style (transactions-styles/command-send-currency-text outgoing)
-                        :font  :default}
+           [{:style (transactions-styles/command-send-currency-text outgoing)}
             (wallet.utils/display-symbol token)]]]]
         (when (and fiat-amount
                    platform/mobile?
