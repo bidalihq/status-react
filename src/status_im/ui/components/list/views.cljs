@@ -148,8 +148,7 @@
        text])
     (when accessory-value
       [react/text {:style           styles/settings-item-value
-                   :number-of-lines 1
-                   :uppercase?      true}
+                   :number-of-lines 1}
        (str accessory-value)])
     (when-not hide-chevron?
       [vector-icons/icon :main-icons/next {:color (colors/alpha colors/gray 0.4)}])]])

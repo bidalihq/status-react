@@ -91,8 +91,7 @@
                      [react/activity-indicator {:animating true
                                                 :size      :small}]]
          :error [react/view styles/error-container
-                 [react/text {:style styles/error-text
-                              :font  :medium}
+                 [react/text {:style styles/error-text}
                   (i18n/label error-label)]]
          (if (= step :puk)
            [puk-indicators pin]

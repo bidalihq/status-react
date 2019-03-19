@@ -35,8 +35,9 @@
    :justify-content  :center})
 
 (def public-chat-icon-symbol
-  {:font-size 20
-   :color     colors/white})
+  {:font-size      20
+   :text-transform :uppercase
+   :color          colors/white})
 
 (def input-container
   {:padding          0

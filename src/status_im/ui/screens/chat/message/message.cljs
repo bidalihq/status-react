@@ -78,8 +78,7 @@
 
 (defview message-content-status [{:keys [content]}]
   [react/view style/status-container
-   [react/text {:style style/status-text
-                :font  :default}
+   [react/text {:style style/status-text}
     (:text content)]])
 
 (defn expand-button [expanded? chat-id message-id]
@@ -154,8 +153,7 @@
 
 (defn- text-status [status]
   [react/view style/delivery-view
-   [react/text {:style style/delivery-text
-                :font  :default}
+   [react/text {:style style/delivery-text}
     (i18n/message-status-label status)]])
 
 (defview group-message-delivery-status [{:keys [message-id current-public-key user-statuses] :as msg}]
@@ -182,8 +180,7 @@
                                    :height        16
                                    :border-radius 8}}])
           (if (> delivery-statuses-count 3)
-            [react/text {:style style/delivery-text
-                         :font  :default}
+            [react/text {:style style/delivery-text}
              (str "+ " (- delivery-statuses-count 3))])]]))))
 
 (defn message-activity-indicator []

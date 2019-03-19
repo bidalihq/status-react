@@ -307,7 +307,5 @@
   [react/view styles/separator])
 
 (defn button-text [label]
-  [react/text {:style      styles/button-text
-               :font       (if platform/android? :medium :default)
-               :uppercase? true}
+  [react/text {:style styles/button-text}
    label])

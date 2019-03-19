@@ -311,7 +311,6 @@
         [react/view {:style styles/bottom-toolbar}
          [components.common/button {:button-style styles/intro-button
                                     :disabled?    disabled?
-                                    :uppercase?   false
                                     :label-style  (when disabled? {:color colors/gray})
                                     :on-press     #(re-frame/dispatch
                                                     [:tribute-to-talk.ui/step-forward-pressed])

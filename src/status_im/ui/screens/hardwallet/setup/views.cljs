@@ -69,9 +69,8 @@
        [react/view components.styles/flex]
        [react/view {:margin-right 20}
         [components.common/bottom-button
-         {:on-press   #(re-frame/dispatch [:hardwallet.ui/secret-keys-next-button-pressed])
-          :uppercase? false
-          :forward?   true}]]]]]))
+         {:on-press #(re-frame/dispatch [:hardwallet.ui/secret-keys-next-button-pressed])
+          :forward? true}]]]]]))
 
 (defview card-ready []
   (letsubs [flow [:hardwallet-flow]]
@@ -89,9 +88,8 @@
        [react/view components.styles/flex]
        [react/view {:margin-right 20}
         [components.common/bottom-button
-         {:on-press   #(re-frame/dispatch [:hardwallet.ui/card-ready-next-button-pressed])
-          :uppercase? false
-          :forward?   true}]]]]]))
+         {:on-press #(re-frame/dispatch [:hardwallet.ui/card-ready-next-button-pressed])
+          :forward? true}]]]]]))
 
 (defview display-recovery-phrase []
   (letsubs [mnemonic [:hardwallet-mnemonic]]
@@ -121,10 +119,9 @@
         [react/view components.styles/flex]
         [react/view {:margin-right 20}
          [components.common/bottom-button
-          {:on-press   #(re-frame/dispatch [:hardwallet.ui/recovery-phrase-next-button-pressed])
-           :label      (i18n/label :t/next)
-           :uppercase? false
-           :forward?   true}]]]])))
+          {:on-press #(re-frame/dispatch [:hardwallet.ui/recovery-phrase-next-button-pressed])
+           :label    (i18n/label :t/next)
+           :forward? true}]]]])))
 
 (defview confirm-word-input [error ref step]
   {:component-will-update #(.clear @ref)}
@@ -155,15 +152,13 @@
          [confirm-word-input error ref step]]]
        [react/view styles/back-and-next-buttons-container
         [components.common/bottom-button
-         {:on-press   #(re-frame/dispatch [:hardwallet.ui/recovery-phrase-confirm-word-back-button-pressed])
-          :back?      true
-          :uppercase? false
-          :label      (i18n/label :t/back)}]
+         {:on-press #(re-frame/dispatch [:hardwallet.ui/recovery-phrase-confirm-word-back-button-pressed])
+          :back?    true
+          :label    (i18n/label :t/back)}]
         [components.common/bottom-button
-         {:on-press   #(re-frame/dispatch [:hardwallet.ui/recovery-phrase-confirm-word-next-button-pressed])
-          :disabled?  (empty? input-word)
-          :uppercase? false
-          :forward?   true}]]])))
+         {:on-press  #(re-frame/dispatch [:hardwallet.ui/recovery-phrase-confirm-word-next-button-pressed])
+          :disabled? (empty? input-word)
+          :forward?  true}]]])))
 
 (defview enter-recovery-phrase []
   (letsubs [width [:dimensions/window-width]
@@ -198,11 +193,10 @@
         [react/view components.styles/flex]
         [react/view {:margin-right 20}
          [components.common/bottom-button
-          {:on-press   #(re-frame/dispatch [:hardwallet.ui/recovery-phrase-next-button-pressed])
-           :label      (i18n/label :t/next)
-           :disabled?  disabled?
-           :uppercase? false
-           :forward?   true}]]]])))
+          {:on-press  #(re-frame/dispatch [:hardwallet.ui/recovery-phrase-next-button-pressed])
+           :label     (i18n/label :t/next)
+           :disabled? disabled?
+           :forward?  true}]]]])))
 
 (defview recovery-phrase []
   (letsubs [flow [:hardwallet-flow]]
@@ -228,10 +222,9 @@
       [react/view components.styles/flex]
       [react/view {:margin-right 20}
        [components.common/bottom-button
-        {:on-press   #(re-frame/dispatch [:hardwallet.ui/pair-code-next-button-pressed])
-         :disabled?  (empty? pair-code)
-         :uppercase? false
-         :forward?   true}]]]]))
+        {:on-press  #(re-frame/dispatch [:hardwallet.ui/pair-code-next-button-pressed])
+         :disabled? (empty? pair-code)
+         :forward?  true}]]]]))
 
 (defn- card-with-button-view
   [{:keys [text-label button-label button-container-style on-press show-icon?]}]

@@ -94,8 +94,8 @@
                                       :align-content :center}
                               :on-press on-press}
    [react/text {:style {:font-size 10
-                        :color     colors/white}
-                :font :medium} tag]])
+                        :color     colors/white}}
+    tag]])
 
 (defn search-input [search-filter]
   [react/view {:style {:flex 1

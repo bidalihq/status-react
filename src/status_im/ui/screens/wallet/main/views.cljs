@@ -91,11 +91,9 @@
                       :accessibility-label (str (-> symbol name clojure.string/lower-case) "-asset-value-text")}
           (wallet.utils/format-amount amount decimals)]
          [react/text {:style           styles/asset-item-currency
-                      :uppercase?      true
                       :number-of-lines 1}
           (wallet.utils/display-symbol token)]]
         [react/text {:style           styles/asset-item-price
-                     :uppercase?      true
                      :number-of-lines 1}
          (or @asset-value "...")]]])))
 

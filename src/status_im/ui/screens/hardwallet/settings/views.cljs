@@ -49,7 +49,6 @@
    [components.common/bottom-button
     {:on-press   #(re-frame/dispatch [:keycard-settings.ui/reset-card-next-button-pressed])
      :disabled?  disabled?
-     :uppercase? false
      :forward?   true}]])
 
 (defview reset-card []
